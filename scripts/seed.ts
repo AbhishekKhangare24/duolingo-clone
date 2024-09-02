@@ -111,7 +111,7 @@ const main = async () => {
         imageSrc: "/woman.svg",
         correct: false,
         text: "la mujer",
-        audioSrc: "/es_women.mp3",
+        audioSrc: "/es_woman.mp3",
       },
       {
         id: 3,
