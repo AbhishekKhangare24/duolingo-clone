@@ -1,18 +1,25 @@
 import { cache } from "react";
-import db from "@/db/drizzle";
+
 import { auth } from "@clerk/nextjs";
 import { eq } from "drizzle-orm";
+
+import db from "./drizzle";
 import {
   challengeProgress,
-  challenges,
   courses,
   lessons,
   units,
   userProgress,
   userSubscription,
-} from "@/db/schema";
+} from "./schema";
 
 const DAY_IN_MS = 86_400_000;
+
+export const getCourses = cache(async () => {
+  const data = await db.query.courses.findMany();
+
+  return data;
+});
 
 export const getUserProgress = cache(async () => {
   const { userId } = auth();
@@ -30,20 +37,20 @@ export const getUserProgress = cache(async () => {
 });
 
 export const getUnits = cache(async () => {
-  const { userId } = await auth();
+  const { userId } = auth();
   const userProgress = await getUserProgress();
 
-  if (!userId || !userProgress?.activeCourseId) {
-    return [];
-  }
+  if (!userId || !userProgress?.activeCourseId) return [];
 
-  //TODO: Confirm whether order is needed
   const data = await db.query.units.findMany({
     where: eq(units.courseId, userProgress.activeCourseId),
+    orderBy: (units, { asc }) => [asc(units.order)],
     with: {
       lessons: {
+        orderBy: (lessons, { asc }) => [asc(lessons.order)],
         with: {
           challenges: {
+            orderBy: (challenges, { asc }) => [asc(challenges.order)],
             with: {
               challengeProgress: {
                 where: eq(challengeProgress.userId, userId),
@@ -77,25 +84,19 @@ export const getUnits = cache(async () => {
   return normalizedData;
 });
 
-export const getCourses = cache(async () => {
-  const data = await db.query.courses.findMany();
-
-  return data;
-});
-
 export const getCourseById = cache(async (courseId: number) => {
   const data = await db.query.courses.findFirst({
     where: eq(courses.id, courseId),
-    // with: {
-    //   units: {
-    //     orderBy: (units, { asc }) => [asc(units.order)],
-    //     with: {
-    //       lessons: {
-    //         orderBy: (lessons, { asc }) => [asc(lessons.order)],
-    //       },
-    //     },
-    //   },
-    // },
+    with: {
+      units: {
+        orderBy: (units, { asc }) => [asc(units.order)],
+        with: {
+          lessons: {
+            orderBy: (lessons, { asc }) => [asc(lessons.order)],
+          },
+        },
+      },
+    },
   });
 
   return data;
@@ -130,14 +131,11 @@ export const getCourseProgress = cache(async () => {
   const firstUncompletedLesson = unitsInActiveCourse
     .flatMap((unit) => unit.lessons)
     .find((lesson) => {
-      // TODO: If something does not work, check the last if clause
       return lesson.challenges.some((challenge) => {
         return (
           !challenge.challengeProgress ||
           challenge.challengeProgress.length === 0 ||
-          challenge.challengeProgress.some(
-            (progress) => !progress.completed === false
-          )
+          challenge.challengeProgress.some((progress) => !progress.completed)
         );
       });
     });
@@ -176,7 +174,6 @@ export const getLesson = cache(async (id?: number) => {
   if (!data || !data.challenges) return null;
 
   const normalizedChallenges = data.challenges.map((challenge) => {
-    // TODO: If something does not work, check the last if clause
     const completed =
       challenge.challengeProgress &&
       challenge.challengeProgress.length > 0 &&
@@ -227,4 +224,23 @@ export const getUserSubscription = cache(async () => {
     ...data,
     isActive: !!isActive,
   };
+});
+
+export const getTopTenUsers = cache(async () => {
+  const { userId } = auth();
+
+  if (!userId) return [];
+
+  const data = await db.query.userProgress.findMany({
+    orderBy: (userProgress, { desc }) => [desc(userProgress.points)],
+    limit: 10,
+    columns: {
+      userId: true,
+      userName: true,
+      userImageSrc: true,
+      points: true,
+    },
+  });
+
+  return data;
 });
