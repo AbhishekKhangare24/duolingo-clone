@@ -1,7 +1,7 @@
 import { lessons, units } from "@/db/schema";
 
-import { UnitBanner } from "./unit-banner";
 import { LessonButton } from "./lesson-button";
+import { UnitBanner } from "./unit-banner";
 
 type UnitProps = {
   id: number;
@@ -32,7 +32,7 @@ export const Unit = ({
 
       <div className="relative flex flex-col items-center">
         {lessons.map((lesson, i) => {
-          const isCurrent = lesson.id === activeLesson?.id; // TODO: Remove later
+          const isCurrent = lesson.id === activeLesson?.id;
           const isLocked = !lesson.completed && !isCurrent;
 
           return (
