@@ -1,11 +1,12 @@
-import Link from "next/link";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import { InfinityIcon } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+
+import { Button } from "@/components/ui/button";
 import { courses } from "@/db/schema";
 
-type Props = {
-  activeCourse: typeof courses.$inferSelect; // TODO: Replace with DB types
+type UserProgressProps = {
+  activeCourse: typeof courses.$inferSelect;
   hearts: number;
   points: number;
   hasActiveSubscription: boolean;
@@ -13,12 +14,12 @@ type Props = {
 
 export const UserProgress = ({
   activeCourse,
-  points,
   hearts,
+  points,
   hasActiveSubscription,
-}: Props) => {
+}: UserProgressProps) => {
   return (
-    <div className="flex items-center justify-between gap-x-2 w-full">
+    <div className="flex w-full items-center justify-between gap-x-2">
       <Link href="/courses">
         <Button variant="ghost">
           <Image
@@ -30,29 +31,31 @@ export const UserProgress = ({
           />
         </Button>
       </Link>
+
       <Link href="/shop">
         <Button variant="ghost" className="text-orange-500">
           <Image
             src="/points.svg"
+            height={28}
+            width={28}
             alt="Points"
             className="mr-2"
-            width={28}
-            height={28}
           />
           {points}
         </Button>
       </Link>
+
       <Link href="/shop">
         <Button variant="ghost" className="text-rose-500">
           <Image
             src="/heart.svg"
-            alt="Points"
-            className="mr-2"
-            width={22}
             height={22}
+            width={22}
+            alt="Hearts"
+            className="mr-2"
           />
           {hasActiveSubscription ? (
-            <InfinityIcon className="h-4 w-4 stroke-[3]" />
+            <InfinityIcon className="stroke-3 h-4 w-4" />
           ) : (
             hearts
           )}
